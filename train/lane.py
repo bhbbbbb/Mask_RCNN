@@ -35,14 +35,12 @@ import numpy as np
 import skimage.draw
 
 # Root directory of the project
-ROOT_DIR = os.path.abspath("../")
+ROOT_DIR = os.path.abspath(os.path.join(__file__, "..", ".."))
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
 from config import LaneConfig
 from mrcnn import model as modellib, utils
-import importlib
-# importlib.reload(modellib)
 
 # Path to trained weights file
 COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
@@ -53,12 +51,12 @@ DEFAULT_LOGS_DIR = os.path.join(ROOT_DIR, "logs")
 
 DEFAULT_DATASET_DIR = os.path.join(ROOT_DIR, "..", "ICME2022_Training_Dataset")
 DATASET_IMAGES_SUBSET = {
-    "train": "images_test",
+    "train": "images",
     "train_test": "images_test",
     "val": "images_real_world"
 }
 DATASET_LABELS_SUBSET = {
-    "train": os.path.join("labels_test", "class_labels"),
+    "train": os.path.join("labels", "class_labels"),
     "train_test": os.path.join("labels_test", "class_labels"),
     "val": "labels_real_world"
 }
