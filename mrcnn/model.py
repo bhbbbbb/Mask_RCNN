@@ -20,7 +20,8 @@ import tensorflow as tf
 import keras
 import keras.backend as K
 import keras.layers as KL
-import keras.engine as KE
+# import keras.engine as KE
+import keras.engine.topology as KE
 import keras.models as KM
 
 from mrcnn import utils
@@ -2324,10 +2325,12 @@ class MaskRCNN():
             layers = layer_regex[layers]
 
         # Data generators
+        print("******************* train", train_dataset.image_ids)
         train_generator = data_generator(train_dataset, self.config, shuffle=True,
                                          augmentation=augmentation,
                                          batch_size=self.config.BATCH_SIZE,
                                          no_augmentation_sources=no_augmentation_sources)
+        print("val", val_dataset.image_ids)
         val_generator = data_generator(val_dataset, self.config, shuffle=True,
                                        batch_size=self.config.BATCH_SIZE)
 
@@ -2356,7 +2359,7 @@ class MaskRCNN():
         # Work-around for Windows: Keras fails on Windows when using
         # multiprocessing workers. See discussion here:
         # https://github.com/matterport/Mask_RCNN/issues/13#issuecomment-353124009
-        if os.name is 'nt':
+        if os.name == 'nt':
             workers = 0
         else:
             workers = multiprocessing.cpu_count()
