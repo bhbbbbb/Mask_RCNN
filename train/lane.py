@@ -35,14 +35,12 @@ import numpy as np
 import skimage.draw
 
 # Root directory of the project
-ROOT_DIR = os.path.abspath("../")
+ROOT_DIR = os.path.abspath(os.path.join(__file__, "..", ".."))
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
 from config import LaneConfig
 from mrcnn import model as modellib, utils
-import importlib
-# importlib.reload(modellib)
 
 # Path to trained weights file
 COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
