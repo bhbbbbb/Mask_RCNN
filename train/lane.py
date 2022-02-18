@@ -67,6 +67,8 @@ LABEL_POSTFIX = {
 
 
 import time
+# import gc
+import imagesize
 
 ############################################################
 #  Dataset
@@ -104,57 +106,22 @@ class LaneDataset(utils.Dataset):
                 
             image_path = os.path.join(dataset_images_dir, file)
             label_path = os.path.join(dataset_labels_dir, name + postfix)
-            for i in range(1, 100):
-                try:
-                    # imread_time = time.monotonic_ns()
-                    label = skimage.io.imread(label_path)
-                    # imread_time = time.monotonic_ns() - imread_time
-                    break
-                except MemoryError as err:
-                    sleep_time = i ** 2
-                    print(f"{err} occurs at fidx={fidx} for file: {name}, try again after {sleep_time}s")
-                    time.sleep(sleep_time)
-                    if i == 99: raise "give up"
-            
-            height, width = label.shape[:2]
 
-            mask = np.zeros([label.shape[0], label.shape[1], 0], dtype=bool)
-
-            # set_labels_time = time.monotonic_ns()
-            if len(label.shape) == 3: label = label[..., 0]
-            for i in range(1, LaneConfig.NUM_CLASSES):
-                filiter = label == i
-                filiter = filiter[..., np.newaxis]
-                mask = np.concatenate((mask, filiter), axis=2)
-
-            # for (ridx, row) in enumerate(label):
-            #     for (idx, class_label) in enumerate(row):
-            #         if len(label.shape) == 3:
-            #             mask[ridx, idx, class_label[0]] = 1
-            #         else:
-            #             mask[ridx, idx, class_label] = 1
-            # set_labels_time = time.monotonic_ns() - set_labels_time
+            height, width = imagesize.get(label_path)
 
             self.add_image(
                 "lane",
                 image_id=name,  # use file name as a unique image id
                 path=image_path,
+                label_path=label_path,
                 width=width,
-                height=height,
-                mask=mask)
+                height=height)
             
-            # imread_time_sum = imread_time_sum + imread_time
-            # set_labels_time_sum = set_labels_time_sum + set_labels_time
-            # if fidx % 5 == 0:
-            #     print("------------------------------------------")
-            #     print(f"current spent time: imread: {imread_time}, set: {set_labels_time}")
-            #     times = fidx + 1
-            #     print(f"average spent time: {imread_time_sum / times}, {set_labels_time_sum / times}")
-            #     print("------------------------------------------")
-
-
             if fidx % 100 == 0:
                 print("{}/{}({} %) {} is added.".format(fidx, len(files), 100 * fidx / len(files), name))
+            
+            # del label
+            # gc.collect()
 
 
     def load_mask(self, image_id):
@@ -170,12 +137,27 @@ class LaneDataset(utils.Dataset):
         assert image_info["source"] == "lane"
         # if image_info["source"] != "lane":
         #     return super(self.__class__, self).load_mask(image_id)
+        label_path = image_info["label_path"]
+        for i in range(3, 100):
+            try:
+                label = skimage.io.imread(label_path)
 
-        mask = image_info["mask"]
-        image_info["mask"] = None
+                mask = np.zeros([label.shape[0], label.shape[1], 0], dtype=bool)
+
+                if len(label.shape) == 3: label = label[..., 0]
+                for i in range(1, LaneConfig.NUM_CLASSES):
+                    filiter = label == i
+                    filiter = filiter[..., np.newaxis]
+                    mask = np.concatenate((mask, filiter), axis=2)
+                break
+            except MemoryError as err:
+                sleep_time = i ** 2
+                print(f"{err} occurs at load_mask for {image_id}, try again after {sleep_time}s")
+                time.sleep(sleep_time)
+                if i == 99: raise "give up"
 
         # Return mask, and array of class IDs of each instance. Since we have
-        return mask.astype(bool), [i for i in range(1, LaneConfig.NUM_CLASSES)]
+        return mask.astype(bool), np.array([i for i in range(1, LaneConfig.NUM_CLASSES)], dtype=np.uint8)
 
     def image_reference(self, image_id):
         """Return the path of the image."""
